@@ -34,9 +34,10 @@ docker run -p 8080:8080 -e POLYGON_API_KEY=your_key market-relay
 
 1. Create a new Railway project from this repo.
 2. Set root directory to `relay`.
-3. Add env vars above.
-4. Set replicas to `1`.
-5. Deploy.
+3. Ensure the entry file `relay/server.js` exists in the deployed branch.
+4. Add env vars above.
+5. Set replicas to `1`.
+6. Deploy.
 
 ## Frontend Wiring
 
