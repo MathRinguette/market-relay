@@ -50,6 +50,8 @@ const prices = {};
 const prevPrices = {};
 const sseClients = new Set();
 const activeStreams = {};
+let httpServer = null;
+let isShuttingDown = false;
 
 let forexPollRunning = false;
 let liveFallbackPollRunning = false;
@@ -520,6 +522,39 @@ app.get('/sse', (req, res) => {
 
 startRelay();
 
-app.listen(PORT, () => {
+function gracefulShutdown(signal) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  console.log(`[relay] received ${signal}, shutting down`);
+
+  for (const stream of Object.values(activeStreams)) {
+    try {
+      stream.close(1001, 'shutdown');
+    } catch (_) {}
+  }
+
+  for (const res of sseClients) {
+    try {
+      res.end();
+    } catch (_) {}
+  }
+  sseClients.clear();
+
+  if (!httpServer) {
+    process.exit(0);
+    return;
+  }
+
+  httpServer.close(() => {
+    process.exit(0);
+  });
+
+  setTimeout(() => process.exit(0), 5000).unref();
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+httpServer = app.listen(PORT, () => {
   console.log(`[relay] listening on :${PORT}`);
 });
